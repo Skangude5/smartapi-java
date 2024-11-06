@@ -44,7 +44,6 @@
 		<mockito-junit-jupiter.version>5.5.0</mockito-junit-jupiter.version>
 		<okhttp.mockwebserver.version>4.11.0</okhttp.mockwebserver.version>
 		<google-auth.version>1.5.0</google-auth.version>
-		<wiremock.version>3.0.1</wiremock.version>
 		<slf4j-api.version>1.7.32</slf4j-api.version>
 		<logback-classic.version>1.2.6</logback-classic.version>
 	</properties>
@@ -163,11 +162,6 @@
             <version>${google-auth.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock</artifactId>
-            <version>${wiremock.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j-api.version}</version>
@@ -215,9 +209,7 @@
 								<filter>
 									<artifact>*:*</artifact>
 									<excludes>
-										<exclude>META-INF/*.SF</exclude>
-										<exclude>META-INF/*.DSA</exclude>
-										<exclude>META-INF/*.RSA</exclude>
+										<exclude>META-INF/*</exclude>
 									</excludes>
 								</filter>
 							</filters>
