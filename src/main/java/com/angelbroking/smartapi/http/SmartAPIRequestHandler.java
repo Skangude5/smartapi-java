@@ -63,32 +63,7 @@ public class SmartAPIRequestHandler {
 			BufferedReader sc = new BufferedReader(new InputStreamReader(urlName.openStream()));
 			String clientPublicIP = sc.readLine().trim();
 			headers.put("clientPublicIP", clientPublicIP);
-			String macAddress = null;
-			// MAC Address
-			// get all network interfaces of the current system
-			Enumeration<NetworkInterface> networkInterface = NetworkInterface.getNetworkInterfaces();
-			// iterate over all interfaces
-			while (networkInterface.hasMoreElements()) {
-				// get an interface
-				NetworkInterface network = networkInterface.nextElement();
-				// get its hardware or mac address
-				byte[] macAddressBytes = network.getHardwareAddress();
-				if (macAddressBytes != null) {
-					// initialize a string builder to hold mac address
-					StringBuilder macAddressStr = new StringBuilder();
-					// iterate over the bytes of mac address
-					for (int i = 0; i < macAddressBytes.length; i++) {
-						// convert byte to string in hexadecimal form
-						macAddressStr.append(String.format("%02X%s", macAddressBytes[i],
-								(i < macAddressBytes.length - 1) ? "-" : ""));
-					}
-
-					macAddress = macAddressStr.toString();
-					if (macAddress != null) {
-						break;
-					}
-				}
-			}
+			String macAddress = "02:00:00:00:00:00";
 			headers.put("macAddress", macAddress);
 			String accept = "application/json";
 			headers.put("accept", accept);
