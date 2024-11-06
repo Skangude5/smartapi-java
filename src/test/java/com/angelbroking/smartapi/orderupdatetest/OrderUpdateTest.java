@@ -6,9 +6,7 @@ import com.angelbroking.smartapi.orderupdate.OrderUpdateListner;
 import com.angelbroking.smartapi.orderupdate.OrderUpdateWebsocket;
 import com.angelbroking.smartapi.smartstream.models.SmartStreamError;
 import com.neovisionaries.ws.client.WebSocketException;
-import com.warrenstrange.googleauth.GoogleAuthenticator;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -23,7 +21,7 @@ public class OrderUpdateTest {
     private static String totp;
 
     @BeforeAll
-    public void init(){
+    public static void init(){
         clientID = System.getProperty("clientID");
         clientPass = System.getProperty("clientPass");
         apiKey = System.getProperty("apiKey");

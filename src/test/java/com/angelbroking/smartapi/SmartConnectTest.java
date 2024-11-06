@@ -1,11 +1,9 @@
 package com.angelbroking.smartapi;
 
 import com.angelbroking.smartapi.http.SmartAPIRequestHandler;
-import com.angelbroking.smartapi.http.exceptions.DataException;
 import com.angelbroking.smartapi.http.exceptions.SmartAPIException;
 import com.angelbroking.smartapi.models.*;
 import com.angelbroking.smartapi.utils.Constants;
-import com.github.tomakehurst.wiremock.common.Json;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -23,7 +21,6 @@ import java.util.List;
 
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,7 +33,6 @@ import static com.angelbroking.smartapi.utils.Constants.SMART_API_EXCEPTION_ERRO
 import static com.angelbroking.smartapi.utils.Constants.SMART_API_EXCEPTION_OCCURRED;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 
 
 @RunWith(MockitoJUnitRunner.Silent.class)
