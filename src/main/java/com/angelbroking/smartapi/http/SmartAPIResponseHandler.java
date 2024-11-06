@@ -7,7 +7,6 @@ import com.angelbroking.smartapi.http.exceptions.ApiKeyException;
 import com.angelbroking.smartapi.models.SearchScripResponseDTO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -30,11 +29,10 @@ import static com.angelbroking.smartapi.utils.Constants.TOKEN_EXCEPTION_MESSAGE;
 /**
  * Response handler for handling all the responses.
  */
-@Slf4j
 public class SmartAPIResponseHandler {
 
 	public JSONObject handle(Response response, String body) throws IOException, SmartAPIException, JSONException {
-		log.info("***************************");
+		System.out.println("***************************");
 		if (response.header("Content-Type").contains("json")) {
 			JSONObject jsonObject = new JSONObject(body);
 
@@ -110,10 +108,8 @@ public class SmartAPIResponseHandler {
         if (response.code() == 200) {
             return handleResponse(response,body);
         } else if (response.code() == 400){
-            log.error("Bad request. Please provide valid input");
             return "Bad request. Please provide valid input";
         }else {
-            log.error("Response or response body is null.");
             throw new IllegalArgumentException("Response or response body is null.");
         }
     }
@@ -143,7 +139,6 @@ public class SmartAPIResponseHandler {
             }
 
         } catch (JSONException e) {
-            log.error("Error parsing response body as JSON.", e.getMessage());
             throw new SmartAPIException("Error parsing response body as JSON.");
         }
     }
@@ -154,7 +149,6 @@ public class SmartAPIResponseHandler {
             return objectMapper.readValue(dataArray.toString(), new TypeReference<List<SearchScripResponseDTO>>() {
             });
         } catch (IOException e) {
-            log.error("Error parsing JSON data array.", e);
             throw new SmartAPIException("Error parsing JSON data array.");
         }
     }

@@ -1,7 +1,5 @@
 package com.angelbroking.smartapi.utils;
 
-import org.json.JSONObject;
-
 public class Utils {
 	private Utils() {
 		

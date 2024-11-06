@@ -1,10 +1,8 @@
 package com.angelbroking.smartapi.http;
 
-import com.angelbroking.smartapi.SmartConnect;
 import com.angelbroking.smartapi.http.exceptions.SmartAPIException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -12,7 +10,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import okhttp3.logging.HttpLoggingInterceptor;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -31,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Request handler for all Http requests
  */
-@Slf4j
 public class SmartAPIRequestHandler {
 
 	private OkHttpClient client;
@@ -50,13 +46,7 @@ public class SmartAPIRequestHandler {
 			builder.proxy(proxy);
 		}
 
-		HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
-		logging.setLevel(HttpLoggingInterceptor.Level.BODY);
-		if (SmartConnect.ENABLE_LOGGING) {
-			client = builder.addInterceptor(logging).build();
-		} else {
-			client = builder.build();
-		}
+		client = builder.build();
 	}
 
 	public JSONObject apiHeaders() {
@@ -106,11 +96,9 @@ public class SmartAPIRequestHandler {
 			headers.put("userType", userType);
 			String sourceID = "WEB";
 			headers.put("sourceID", sourceID);
-
-			log.info("headers : {}",headers);
 			return headers;
 		} catch (Exception e) {
-			log.error(e.getMessage());
+			e.printStackTrace();
 			return null;
 		}
 
@@ -138,13 +126,13 @@ public class SmartAPIRequestHandler {
 			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(body);
 			if(jsonNode.get("status") == null){
-				log.error("Error in POST request. Request URL: {}, Request Headers: {}, Request Body: {},Response : {}",
+				System.out.printf("Error in POST request. Request URL: %s, Request Headers: %s, Request Body: %s,Response : %s\n",
 						url, request.headers(), params,body);
 			}
 			return new SmartAPIResponseHandler().handle(response, body);
 		}
 		catch (Exception e){
-			log.error("Error in POST request. Request URL: {}, Request Headers: {}, Request Body: {},Response : {}",
+			System.out.printf("Error in POST request. Request URL: %s, Request Headers: %s, Request Body: %s,Response : %s\n",
 					url, request.headers(), params,e.getMessage());
 			throw e;
 		}
@@ -173,13 +161,13 @@ public class SmartAPIRequestHandler {
 			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(body);
 			if(jsonNode.get("status") == null){
-				log.error("Error in POST request. Request URL: {}, Request Headers: {}, Request Body: {},Response : {}",
+				System.out.printf("Error in POST request. Request URL: %s, Request Headers: %s, Request Body: %s,Response : %s\n",
 						url, request.headers(), params,body);
 			}
 			return new SmartAPIResponseHandler().handle(response, body);
 		}
 		catch (Exception e){
-			log.error("Error in POST request. Request URL: {}, Request Headers: {}, Request Body: {},Response : {}",
+			System.out.printf("Error in POST request. Request URL: %s, Request Headers: %s, Request Body: %s,Response : %s\n",
 					url, request.headers(), params,e.getMessage());
 			throw e;
 		}
@@ -197,12 +185,13 @@ public class SmartAPIRequestHandler {
 	 * @throws IOException       is thrown when there is a connection related error.
 	 * @throws SmartAPIException is thrown for all Smart API Trade related errors.
 	 * @throws JSONException     is thrown for parsing errors.
+	 * @throws NullPointerException is thrown for body is null
 	 */
 	public JSONObject postRequestJSON(String url, JSONArray jsonArray, String apiKey, String accessToken)
-			throws IOException, SmartAPIException, JSONException {
+			throws IOException, SmartAPIException, JSONException, NullPointerException {
 		Request request = createJsonPostRequest(url, jsonArray, apiKey, accessToken);
 		Response response = client.newCall(request).execute();
-		String body = response.body().string();
+        String body = response.body().string();
 		return new SmartAPIResponseHandler().handle(response, body);
 	}
 
@@ -218,9 +207,10 @@ public class SmartAPIRequestHandler {
 	 * @throws IOException       is thrown when there is a connection related error.
 	 * @throws SmartAPIException is thrown for all Smart API Trade related errors.
 	 * @throws JSONException     is thrown for parsing errors.
+	 * @throws NullPointerException is thrown for body is null
 	 */
 	public JSONObject putRequest(String url, Map<String, Object> params, String apiKey, String accessToken)
-			throws IOException, SmartAPIException, JSONException {
+			throws IOException, SmartAPIException, JSONException, NullPointerException {
 		Request request = createPutRequest(url, params, apiKey, accessToken);
 		Response response = client.newCall(request).execute();
 		String body = response.body().string();
@@ -240,9 +230,10 @@ public class SmartAPIRequestHandler {
 	 * @throws IOException       is thrown when there is a connection related error.
 	 * @throws SmartAPIException is thrown for all Smart API Trade related errors.
 	 * @throws JSONException     is thrown for parsing errors.
+	 * @throws NullPointerException is thrown for body is null
 	 */
 	public JSONObject deleteRequest(String url, Map<String, Object> params, String apiKey, String accessToken)
-			throws IOException, SmartAPIException, JSONException {
+			throws IOException, SmartAPIException, JSONException, NullPointerException {
 		Request request = createDeleteRequest(url, params, apiKey, accessToken);
 		Response response = client.newCall(request).execute();
 		String body = response.body().string();
@@ -264,9 +255,10 @@ public class SmartAPIRequestHandler {
 	 * @throws IOException       is thrown when there is a connection related error.
 	 * @throws SmartAPIException is thrown for all Smart API Trade related errors.
 	 * @throws JSONException     is thrown for parsing errors.
+	 * @throws NullPointerException is thrown for body is null
 	 */
 	public JSONObject getRequest(String apiKey, String url, String accessToken)
-			throws IOException, SmartAPIException, JSONException {
+			throws IOException, SmartAPIException, JSONException, NullPointerException {
 		Request request = createGetRequest(apiKey, url, accessToken);
 		try {
 			Response response = client.newCall(request).execute();
@@ -274,13 +266,13 @@ public class SmartAPIRequestHandler {
 			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(body);
 			if(jsonNode.get("status") == null){
-				log.error("Error in GET request. Request URL: {}, Request Headers: {},Response : {}",
+				System.out.printf("Error in GET request. Request URL: %s, Request Headers: %s,Response : %s\n",
 						url, request.headers(),body);
 			}
 			return new SmartAPIResponseHandler().handle(response, body);
 		}
 		catch (Exception e){
-			log.error("Error in POST request. Request URL: {}, Request Headers: {},Response : {}",
+			System.out.printf("Error in POST request. Request URL: %s, Request Headers: %s,Response : %s\n",
 					url, request.headers(),e.getMessage());
 			throw e;
 		}
@@ -358,8 +350,7 @@ public class SmartAPIRequestHandler {
 					.header("X-SourceID", apiheader.getString("sourceID")).build();
 			return request;
 		} catch (Exception e) {
-			log.error("exception createPostRequest");
-			log.error(e.getMessage());
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -391,7 +382,7 @@ public class SmartAPIRequestHandler {
 					.header("X-SourceID", apiheader.getString("sourceID")).build();
 			return request;
 		} catch (Exception e) {
-			log.error(e.getMessage());
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -437,13 +428,13 @@ public class SmartAPIRequestHandler {
 			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(body);
 			if(jsonNode.get("status") == null){
-				log.error("Error in POST request. Request URL: {}, Request Headers: {}, Request Body: {},Response : {}",
+				System.out.printf("Error in POST request. Request URL: %s, Request Headers: %s, Request Body: %s,Response : %s\n",
 						url, request.headers(), params,body);
 			}
 			return new SmartAPIResponseHandler().handler(response, body);
 		}
 		catch (Exception e){
-			log.error("Error in POST request. Request URL: {}, Request Headers: {}, Request Body: {},Response : {}",
+			System.out.printf("Error in POST request. Request URL: %s, Request Headers: %s, Request Body: %s,Response : %s\n",
 					url, request.headers(), params,e.getMessage());
 			throw e;
 		}

@@ -1,9 +1,7 @@
 package com.angelbroking.smartapi.orderupdate;
 
 import com.angelbroking.smartapi.smartstream.models.SmartStreamError;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 public class OrderUpdateServiceImpl implements OrderUpdateListner{
     @Override
     public void onConnected() {
@@ -27,6 +25,6 @@ public class OrderUpdateServiceImpl implements OrderUpdateListner{
 
     @Override
     public void onOrderUpdate(String data) {
-        log.info("order data {} ",data);
+        System.out.println("order data: " + data);
     }
 }

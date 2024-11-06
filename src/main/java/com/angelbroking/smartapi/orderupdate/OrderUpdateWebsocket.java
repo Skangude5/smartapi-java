@@ -4,7 +4,6 @@ import com.angelbroking.smartapi.Routes;
 import com.angelbroking.smartapi.smartstream.models.SmartStreamError;
 import com.angelbroking.smartapi.utils.Utils;
 import com.neovisionaries.ws.client.*;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
@@ -14,7 +13,6 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-@Slf4j
 public class OrderUpdateWebsocket {
     private static final int pingIntervalInMilliSeconds = 10000; // 10 seconds
     private static final String headerAuthorization = "Authorization";
@@ -49,9 +47,7 @@ public class OrderUpdateWebsocket {
 
     private void init() {
         try {
-            log.info("inside websocket init");
-            log.info("accessToken {} ", accessToken);
-            log.info("wsuri = {}", wsuri);
+            System.out.println("inside websocket init");
             ws = new WebSocketFactory()
                     .setVerifyHostname(false)
                     .createSocket(wsuri)
@@ -154,10 +150,10 @@ public class OrderUpdateWebsocket {
     }
 
     private void reconnect() throws WebSocketException {
-        log.info("reconnect - started");
+        System.out.println("reconnect - started");
         init();
         connect();
-        log.info("reconnect - done");
+        System.out.println("reconnect - done");
     }
 
     private SmartStreamError getErrorHolder(Exception e) {
@@ -168,6 +164,6 @@ public class OrderUpdateWebsocket {
 
     public void connect() throws WebSocketException {
         ws.connect();
-        log.info("connected to uri: {}", wsuri);
+        System.out.println("connected to uri: " + wsuri);
     }
 }

@@ -5,7 +5,7 @@
 
 	<groupId>com.angelbroking.smartapi</groupId>
 	<artifactId>smartapi-java</artifactId>
-	<version>2.2.5</version>
+	<version>2.2.6</version>
 	<packaging>jar</packaging>
 
 	<name>smartapi-java</name>
@@ -36,7 +36,6 @@
 		<logging-interceptor.version>4.11.0</logging-interceptor.version>
 		<kotlin-stdlib.version>1.9.10</kotlin-stdlib.version>
 		<gson.version>2.10.1</gson.version>
-		<slf4j-api.version>2.0.9</slf4j-api.version>
 		<logback-classic.version>1.4.11</logback-classic.version>
 		<docker-client.version>8.16.0</docker-client.version>
 		<lombok.version>1.18.30</lombok.version>
@@ -44,7 +43,6 @@
 		<mockito-junit-jupiter.version>5.5.0</mockito-junit-jupiter.version>
 		<okhttp.mockwebserver.version>4.11.0</okhttp.mockwebserver.version>
 		<google-auth.version>1.5.0</google-auth.version>
-		<slf4j-api.version>1.7.32</slf4j-api.version>
 		<logback-classic.version>1.2.6</logback-classic.version>
 	</properties>
 
@@ -107,69 +105,10 @@
             <version>${gson.version}</version>
         </dependency>
 
-        <!-- To mock an object -->
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>${mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Used in assertions while testing -->
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>${assertj.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!--Used in Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j-api.version}</version>
-        </dependency>
-
-        <!--impl for Logging -->
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback-classic.version}</version>
-        </dependency>
-        
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <version>${mockito-junit-jupiter.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>mockwebserver</artifactId>
-            <version>${okhttp.mockwebserver.version}</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>com.warrenstrange</groupId>
             <artifactId>googleauth</artifactId>
             <version>${google-auth.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j-api.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback-classic.version}</version>
         </dependency>
     </dependencies>
 	

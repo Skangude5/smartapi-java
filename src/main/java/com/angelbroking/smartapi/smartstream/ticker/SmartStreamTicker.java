@@ -22,10 +22,7 @@ import com.angelbroking.smartapi.http.exceptions.SmartAPIException;
 import com.angelbroking.smartapi.utils.ByteUtils;
 import com.angelbroking.smartapi.utils.Utils;
 
-import lombok.extern.slf4j.Slf4j;
 
-
-@Slf4j
 public class SmartStreamTicker {
 
 	private static int pingIntervalInMilliSeconds = 10000; // 10 seconds
@@ -253,14 +250,14 @@ public class SmartStreamTicker {
     }
 
 	private void reconnectAndResubscribe() throws WebSocketException {
-		log.info("reconnectAndResubscribe - started");
+		System.out.println("reconnectAndResubscribe - started");
 		init();
 		connect();
 		// resubscribing the existing tokens as per the mode
 		tokensByModeMap.forEach((mode,tokens) -> {
 			subscribe(mode, tokens);
 		});
-		log.info("reconnectAndResubscribe - done");
+		System.out.println("reconnectAndResubscribe - done");
 	}
 
 	/** Disconnects websocket connection. */
@@ -381,7 +378,7 @@ public class SmartStreamTicker {
 
 	public void connect() throws WebSocketException {
 		ws.connect();
-		log.info("connected to uri: {}", wsuri);
+		System.out.println("connected to uri: " + wsuri);
 	}
 
 }

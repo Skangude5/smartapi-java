@@ -4,7 +4,6 @@ import com.angelbroking.smartapi.http.SessionExpiryHook;
 import com.angelbroking.smartapi.http.SmartAPIRequestHandler;
 import com.angelbroking.smartapi.http.exceptions.SmartAPIException;
 import com.angelbroking.smartapi.models.*;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -15,16 +14,8 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.Proxy;
 import java.util.List;
-import javax.net.ssl.HttpsURLConnection;
 
-import static com.angelbroking.smartapi.utils.Constants.IO_EXCEPTION_ERROR_MSG;
-import static com.angelbroking.smartapi.utils.Constants.IO_EXCEPTION_OCCURRED;
-import static com.angelbroking.smartapi.utils.Constants.JSON_EXCEPTION_ERROR_MSG;
-import static com.angelbroking.smartapi.utils.Constants.JSON_EXCEPTION_OCCURRED;
-import static com.angelbroking.smartapi.utils.Constants.SMART_API_EXCEPTION_ERROR_MSG;
-import static com.angelbroking.smartapi.utils.Constants.SMART_API_EXCEPTION_OCCURRED;
 
-@Slf4j
 public class SmartConnect {
 	public static SessionExpiryHook sessionExpiryHook = null;
 	public static boolean ENABLE_LOGGING = false;
@@ -166,33 +157,27 @@ public class SmartConnect {
 	 * @return User is the user model which contains user and session details.
 	 *
 	 */
-	public User generateSession(String clientCode, String password, String totp) {
-		try {
-			smartAPIRequestHandler = new SmartAPIRequestHandler(proxy);
+	public User generateSession(String clientCode, String password, String totp) throws SmartAPIException, IOException {
+		smartAPIRequestHandler = new SmartAPIRequestHandler(proxy);
 
-			// Create JSON params object needed to be sent to api.
-			JSONObject params = new JSONObject();
-			params.put("clientcode", clientCode);
-			params.put("password", password);
-			params.put("totp", totp);
+		// Create JSON params object needed to be sent to api.
+		JSONObject params = new JSONObject();
+		params.put("clientcode", clientCode);
+		params.put("password", password);
+		params.put("totp", totp);
 
-			JSONObject loginResultObject = smartAPIRequestHandler.postRequest(this.apiKey, routes.getLoginUrl(),
-					params);
-			log.info("login result: {}",loginResultObject);
-			String jwtToken = loginResultObject.getJSONObject("data").getString("jwtToken");
-			String refreshToken = loginResultObject.getJSONObject("data").getString("refreshToken");
-			String feedToken = loginResultObject.getJSONObject("data").getString("feedToken");
-			String url = routes.get("api.user.profile");
-			User user = new User().parseResponse(smartAPIRequestHandler.getRequest(this.apiKey, url, jwtToken));
-			user.setAccessToken(jwtToken);
-			user.setRefreshToken(refreshToken);
-			user.setFeedToken(feedToken);
+		JSONObject loginResultObject = smartAPIRequestHandler.postRequest(this.apiKey, routes.getLoginUrl(),
+				params);
+		String jwtToken = loginResultObject.getJSONObject("data").getString("jwtToken");
+		String refreshToken = loginResultObject.getJSONObject("data").getString("refreshToken");
+		String feedToken = loginResultObject.getJSONObject("data").getString("feedToken");
+		String url = routes.get("api.user.profile");
+		User user = new User().parseResponse(smartAPIRequestHandler.getRequest(this.apiKey, url, jwtToken));
+		user.setAccessToken(jwtToken);
+		user.setRefreshToken(refreshToken);
+		user.setFeedToken(feedToken);
 
-			return user;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+		return user;
 
 	}
 
@@ -204,30 +189,25 @@ public class SmartConnect {
 	 * @return TokenSet contains user id, refresh token, api secret.
 	 *
 	 */
-	public TokenSet renewAccessToken(String accessToken, String refreshToken) {
-		try {
-			String hashableText = this.apiKey + refreshToken + accessToken;
-			String sha256hex = sha256Hex(hashableText);
+	public TokenSet renewAccessToken(String accessToken, String refreshToken) throws SmartAPIException, IOException {
+		String hashableText = this.apiKey + refreshToken + accessToken;
+		String sha256hex = sha256Hex(hashableText);
 
-			JSONObject params = new JSONObject();
-			params.put("refreshToken", refreshToken);
-			params.put("checksum", sha256hex);
-			String url = routes.get("api.refresh");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		JSONObject params = new JSONObject();
+		params.put("refreshToken", refreshToken);
+		params.put("checksum", sha256hex);
+		String url = routes.get("api.refresh");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
 
-			accessToken = response.getJSONObject("data").getString("jwtToken");
-			refreshToken = response.getJSONObject("data").getString("refreshToken");
+		accessToken = response.getJSONObject("data").getString("jwtToken");
+		refreshToken = response.getJSONObject("data").getString("refreshToken");
 
-			TokenSet tokenSet = new TokenSet();
-			tokenSet.setUserId(userId);
-			tokenSet.setAccessToken(accessToken);
-			tokenSet.setRefreshToken(refreshToken);
+		TokenSet tokenSet = new TokenSet();
+		tokenSet.setUserId(userId);
+		tokenSet.setAccessToken(accessToken);
+		tokenSet.setRefreshToken(refreshToken);
 
-			return tokenSet;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+		return tokenSet;
 	}
 
 	/**
@@ -250,15 +230,10 @@ public class SmartConnect {
 	 * @return Profile is a POJO which contains profile related data.
 	 *
 	 */
-	public User getProfile() {
-		try {
-			String url = routes.get("api.user.profile");
-			User user = new User().parseResponse(smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken));
-			return user;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+	public User getProfile() throws SmartAPIException, IOException {
+		String url = routes.get("api.user.profile");
+		User user = new User().parseResponse(smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken));
+		return user;
 	}
 
 	/**
@@ -270,51 +245,44 @@ public class SmartConnect {
 	 * @return Order contains only orderId.
 	 *
 	 */
-	public Order placeOrder(OrderParams orderParams, String variety) {
+	public Order placeOrder(OrderParams orderParams, String variety) throws SmartAPIException, IOException {
+		String url = routes.get("api.order.place");
 
-		try {
-			String url = routes.get("api.order.place");
+		JSONObject params = new JSONObject();
 
-			JSONObject params = new JSONObject();
+		if (orderParams.exchange != null)
+			params.put("exchange", orderParams.exchange);
+		if (orderParams.tradingsymbol != null)
+			params.put("tradingsymbol", orderParams.tradingsymbol);
+		if (orderParams.transactiontype != null)
+			params.put("transactiontype", orderParams.transactiontype);
+		if (orderParams.quantity != null)
+			params.put("quantity", orderParams.quantity);
+		if (orderParams.price != null)
+			params.put("price", orderParams.price);
+		if (orderParams.producttype != null)
+			params.put("producttype", orderParams.producttype);
+		if (orderParams.ordertype != null)
+			params.put("ordertype", orderParams.ordertype);
+		if (orderParams.duration != null)
+			params.put("duration", orderParams.duration);
+		if (orderParams.price != null)
+			params.put("price", orderParams.price);
+		if (orderParams.symboltoken != null)
+			params.put("symboltoken", orderParams.symboltoken);
+		if (orderParams.squareoff != null)
+			params.put("squareoff", orderParams.squareoff);
+		if (orderParams.stoploss != null)
+			params.put("stoploss", orderParams.stoploss);
+		if (orderParams.triggerprice != null)
+			params.put("triggerprice", orderParams.triggerprice);
 
-			if (orderParams.exchange != null)
-				params.put("exchange", orderParams.exchange);
-			if (orderParams.tradingsymbol != null)
-				params.put("tradingsymbol", orderParams.tradingsymbol);
-			if (orderParams.transactiontype != null)
-				params.put("transactiontype", orderParams.transactiontype);
-			if (orderParams.quantity != null)
-				params.put("quantity", orderParams.quantity);
-			if (orderParams.price != null)
-				params.put("price", orderParams.price);
-			if (orderParams.producttype != null)
-				params.put("producttype", orderParams.producttype);
-			if (orderParams.ordertype != null)
-				params.put("ordertype", orderParams.ordertype);
-			if (orderParams.duration != null)
-				params.put("duration", orderParams.duration);
-			if (orderParams.price != null)
-				params.put("price", orderParams.price);
-			if (orderParams.symboltoken != null)
-				params.put("symboltoken", orderParams.symboltoken);
-			if (orderParams.squareoff != null)
-				params.put("squareoff", orderParams.squareoff);
-			if (orderParams.stoploss != null)
-				params.put("stoploss", orderParams.stoploss);
-			if (orderParams.triggerprice != null)
-				params.put("triggerprice", orderParams.triggerprice);
+		params.put("variety", variety);
 
-			params.put("variety", variety);
-
-			JSONObject jsonObject = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			Order order = new Order();
-			order.orderId = jsonObject.getJSONObject("data").getString("orderid");
-			log.info("order : {}",order);
-			return order;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+		JSONObject jsonObject = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		Order order = new Order();
+		order.orderId = jsonObject.getJSONObject("data").getString("orderid");
+		return order;
 	}
 
 	/**
@@ -327,40 +295,35 @@ public class SmartConnect {
 	 * @return Order object contains only orderId.
 	 *
 	 */
-	public Order modifyOrder(String orderId, OrderParams orderParams, String variety) {
-		try {
-			String url = routes.get("api.order.modify");
+	public Order modifyOrder(String orderId, OrderParams orderParams, String variety) throws SmartAPIException, IOException {
+		String url = routes.get("api.order.modify");
 
-			JSONObject params = new JSONObject();
+		JSONObject params = new JSONObject();
 
-			if (orderParams.exchange != null)
-				params.put("exchange", orderParams.exchange);
-			if (orderParams.tradingsymbol != null)
-				params.put("tradingsymbol", orderParams.tradingsymbol);
-			if (orderParams.symboltoken != null)
-				params.put("symboltoken", orderParams.symboltoken);
-			if (orderParams.quantity != null)
-				params.put("quantity", orderParams.quantity);
-			if (orderParams.price != null)
-				params.put("price", orderParams.price);
-			if (orderParams.producttype != null)
-				params.put("producttype", orderParams.producttype);
-			if (orderParams.ordertype != null)
-				params.put("ordertype", orderParams.ordertype);
-			if (orderParams.duration != null)
-				params.put("duration", orderParams.duration);
+		if (orderParams.exchange != null)
+			params.put("exchange", orderParams.exchange);
+		if (orderParams.tradingsymbol != null)
+			params.put("tradingsymbol", orderParams.tradingsymbol);
+		if (orderParams.symboltoken != null)
+			params.put("symboltoken", orderParams.symboltoken);
+		if (orderParams.quantity != null)
+			params.put("quantity", orderParams.quantity);
+		if (orderParams.price != null)
+			params.put("price", orderParams.price);
+		if (orderParams.producttype != null)
+			params.put("producttype", orderParams.producttype);
+		if (orderParams.ordertype != null)
+			params.put("ordertype", orderParams.ordertype);
+		if (orderParams.duration != null)
+			params.put("duration", orderParams.duration);
 
-			params.put("variety", variety);
-			params.put("orderid", orderId);
+		params.put("variety", variety);
+		params.put("orderid", orderId);
 
-			JSONObject jsonObject = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			Order order = new Order();
-			order.orderId = jsonObject.getJSONObject("data").getString("orderid");
-			return order;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+		JSONObject jsonObject = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		Order order = new Order();
+		order.orderId = jsonObject.getJSONObject("data").getString("orderid");
+		return order;
 	}
 
 	/**
@@ -372,21 +335,16 @@ public class SmartConnect {
 	 * @return Order object contains only orderId.
 	 *
 	 */
-	public Order cancelOrder(String orderId, String variety) {
-		try {
-			String url = routes.get("api.order.cancel");
-			JSONObject params = new JSONObject();
-			params.put("variety", variety);
-			params.put("orderid", orderId);
+	public Order cancelOrder(String orderId, String variety) throws SmartAPIException, IOException {
+		String url = routes.get("api.order.cancel");
+		JSONObject params = new JSONObject();
+		params.put("variety", variety);
+		params.put("orderid", orderId);
 
-			JSONObject jsonObject = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			Order order = new Order();
-			order.orderId = jsonObject.getJSONObject("data").getString("orderid");
-			return order;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+		JSONObject jsonObject = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		Order order = new Order();
+		order.orderId = jsonObject.getJSONObject("data").getString("orderid");
+		return order;
 	}
 
 	/**
@@ -398,17 +356,10 @@ public class SmartConnect {
 	 *
 	 */
 	@SuppressWarnings({})
-	public JSONObject getOrderHistory(String clientId) {
-		try {
-			String url = routes.get("api.order.book");
-			JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
-			log.info("Order history : {}",response);
-			return response;
-		} catch (Exception | SmartAPIException e) {
-			log.error("Exception#: {}" , e.getMessage());
-			e.printStackTrace();
-			return null;
-		}
+	public JSONObject getOrderHistory(String clientId) throws SmartAPIException, IOException {
+		String url = routes.get("api.order.book");
+		JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
+		return response;
 	}
 
 	/**
@@ -419,21 +370,16 @@ public class SmartConnect {
 	 * @return Map of String and LTPQuote.
 	 *
 	 */
-	public JSONObject getLTP(String exchange, String tradingSymbol, String symboltoken) {
-		try {
-			JSONObject params = new JSONObject();
-			params.put("exchange", exchange);
-			params.put("tradingsymbol", tradingSymbol);
-			params.put("symboltoken", symboltoken);
+	public JSONObject getLTP(String exchange, String tradingSymbol, String symboltoken) throws SmartAPIException, IOException {
+		JSONObject params = new JSONObject();
+		params.put("exchange", exchange);
+		params.put("tradingsymbol", tradingSymbol);
+		params.put("symboltoken", symboltoken);
 
-			String url = routes.get("api.ltp.data");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		String url = routes.get("api.ltp.data");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
 
-			return response.getJSONObject("data");
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+		return response.getJSONObject("data");
 	}
 
 	/**
@@ -441,15 +387,10 @@ public class SmartConnect {
 	 *
 	 * @return List of trades.
 	 */
-	public JSONObject getTrades() {
-		try {
-			String url = routes.get("api.order.trade.book");
-			JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
-			return response;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+	public JSONObject getTrades() throws SmartAPIException, IOException {
+		String url = routes.get("api.order.trade.book");
+		JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
+		return response;
 	}
 
 	/**
@@ -461,15 +402,10 @@ public class SmartConnect {
 	 *                           response.
 	 * @throws IOException       is thrown when there is connection error.
 	 */
-	public JSONObject getRMS() {
-		try {
-			String url = routes.get("api.order.rms.data");
-			JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
-			return response.getJSONObject("data");
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+	public JSONObject getRMS() throws SmartAPIException, IOException {
+		String url = routes.get("api.order.rms.data");
+		JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
+		return response.getJSONObject("data");
 	}
 
 	/**
@@ -478,15 +414,10 @@ public class SmartConnect {
 	 * @return Object of Holding.
 	 *
 	 */
-	public JSONObject getHolding() {
-		try {
-			String url = routes.get("api.order.rms.holding");
-			JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
-			return response;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+	public JSONObject getHolding() throws SmartAPIException, IOException {
+		String url = routes.get("api.order.rms.holding");
+		JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
+		return response;
 	}
 
 
@@ -497,19 +428,8 @@ public class SmartConnect {
 	 *
 	 */
 	public JSONObject getAllHolding() throws SmartAPIException, IOException {
-		try {
-			String url = routes.get("api.order.rms.AllHolding");
-			return smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
-		} catch (SmartAPIException ex) {
-			log.error("{} while getting all holdings {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in getting all holdings %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{} while getting all holdings {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s in getting all holdings %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{} while getting all holdings {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s in getting all holdings %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		}
+		String url = routes.get("api.order.rms.AllHolding");
+		return smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
 	}
 
 	/**
@@ -518,15 +438,10 @@ public class SmartConnect {
 	 * @return Object of position.
 	 *
 	 */
-	public JSONObject getPosition() {
-		try {
-			String url = routes.get("api.order.rms.position");
-			JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
-			return response;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+	public JSONObject getPosition() throws SmartAPIException, IOException {
+		String url = routes.get("api.order.rms.position");
+		JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
+		return response;
 	}
 
 	/**
@@ -538,15 +453,10 @@ public class SmartConnect {
 	 *                           response.
 	 * @throws IOException       is thrown when there is connection error.
 	 */
-	public JSONObject convertPosition(JSONObject params) {
-		try {
-			String url = routes.get("api.order.rms.position.convert");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			return response;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+	public JSONObject convertPosition(JSONObject params) throws SmartAPIException, IOException {
+		String url = routes.get("api.order.rms.position.convert");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		return response;
 	}
 
 	/**
@@ -557,42 +467,36 @@ public class SmartConnect {
 	 *
 	 */
 
-	public Gtt gttCreateRule(GttParams gttParams) {
-		try {
-			String url = routes.get("api.gtt.create");
+	public Gtt gttCreateRule(GttParams gttParams) throws SmartAPIException, IOException {
+		String url = routes.get("api.gtt.create");
 
-			JSONObject params = new JSONObject();
+		JSONObject params = new JSONObject();
 
-			if (gttParams.tradingsymbol != null)
-				params.put("tradingsymbol", gttParams.tradingsymbol);
-			if (gttParams.symboltoken != null)
-				params.put("symboltoken", gttParams.symboltoken);
-			if (gttParams.exchange != null)
-				params.put("exchange", gttParams.exchange);
-			if (gttParams.transactiontype != null)
-				params.put("transactiontype", gttParams.transactiontype);
-			if (gttParams.producttype != null)
-				params.put("producttype", gttParams.producttype);
-			if (gttParams.price != null)
-				params.put("price", gttParams.price);
-			if (gttParams.qty != null)
-				params.put("qty", gttParams.qty);
-			if (gttParams.triggerprice != null)
-				params.put("triggerprice", gttParams.triggerprice);
-			if (gttParams.disclosedqty != null)
-				params.put("disclosedqty", gttParams.disclosedqty);
-			if (gttParams.timeperiod != null)
-				params.put("timeperiod", gttParams.timeperiod);
+		if (gttParams.tradingsymbol != null)
+			params.put("tradingsymbol", gttParams.tradingsymbol);
+		if (gttParams.symboltoken != null)
+			params.put("symboltoken", gttParams.symboltoken);
+		if (gttParams.exchange != null)
+			params.put("exchange", gttParams.exchange);
+		if (gttParams.transactiontype != null)
+			params.put("transactiontype", gttParams.transactiontype);
+		if (gttParams.producttype != null)
+			params.put("producttype", gttParams.producttype);
+		if (gttParams.price != null)
+			params.put("price", gttParams.price);
+		if (gttParams.qty != null)
+			params.put("qty", gttParams.qty);
+		if (gttParams.triggerprice != null)
+			params.put("triggerprice", gttParams.triggerprice);
+		if (gttParams.disclosedqty != null)
+			params.put("disclosedqty", gttParams.disclosedqty);
+		if (gttParams.timeperiod != null)
+			params.put("timeperiod", gttParams.timeperiod);
 
-			JSONObject jsonObject = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			Gtt gtt = new Gtt();
-			gtt.id = jsonObject.getJSONObject("data").getInt("id");
-			log.info("gtt : {}",gtt);
-			return gtt;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+		JSONObject jsonObject = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		Gtt gtt = new Gtt();
+		gtt.id = jsonObject.getJSONObject("data").getInt("id");
+		return gtt;
 
 	}
 
@@ -604,38 +508,32 @@ public class SmartConnect {
 	 *
 	 */
 
-	public Gtt gttModifyRule(Integer id, GttParams gttParams) {
-		try {
-			String url = routes.get("api.gtt.modify");
+	public Gtt gttModifyRule(Integer id, GttParams gttParams) throws SmartAPIException, IOException {
+		String url = routes.get("api.gtt.modify");
 
-			JSONObject params = new JSONObject();
+		JSONObject params = new JSONObject();
 
-			if (gttParams.symboltoken != null)
-				params.put("symboltoken", gttParams.symboltoken);
-			if (gttParams.exchange != null)
-				params.put("exchange", gttParams.exchange);
-			if (gttParams.price != null)
-				params.put("price", gttParams.price);
-			if (gttParams.qty != null)
-				params.put("qty", gttParams.qty);
-			if (gttParams.triggerprice != null)
-				params.put("triggerprice", gttParams.triggerprice);
-			if (gttParams.disclosedqty != null)
-				params.put("disclosedqty", gttParams.disclosedqty);
-			if (gttParams.timeperiod != null)
-				params.put("timeperiod", gttParams.timeperiod);
+		if (gttParams.symboltoken != null)
+			params.put("symboltoken", gttParams.symboltoken);
+		if (gttParams.exchange != null)
+			params.put("exchange", gttParams.exchange);
+		if (gttParams.price != null)
+			params.put("price", gttParams.price);
+		if (gttParams.qty != null)
+			params.put("qty", gttParams.qty);
+		if (gttParams.triggerprice != null)
+			params.put("triggerprice", gttParams.triggerprice);
+		if (gttParams.disclosedqty != null)
+			params.put("disclosedqty", gttParams.disclosedqty);
+		if (gttParams.timeperiod != null)
+			params.put("timeperiod", gttParams.timeperiod);
 
-			params.put("id", id);
+		params.put("id", id);
 
-			JSONObject jsonObject = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			Gtt gtt = new Gtt();
-			gtt.id = jsonObject.getJSONObject("data").getInt("id");
-			log.info("gtt : {}",gtt);
-			return gtt;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+		JSONObject jsonObject = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		Gtt gtt = new Gtt();
+		gtt.id = jsonObject.getJSONObject("data").getInt("id");
+		return gtt;
 
 	}
 
@@ -646,23 +544,17 @@ public class SmartConnect {
 	 * @return Gtt contains only orderId.
 	 */
 
-	public Gtt gttCancelRule(Integer id, String symboltoken, String exchange) {
-		try {
-			JSONObject params = new JSONObject();
-			params.put("id", id);
-			params.put("symboltoken", symboltoken);
-			params.put("exchange", exchange);
+	public Gtt gttCancelRule(Integer id, String symboltoken, String exchange) throws SmartAPIException, IOException {
+		JSONObject params = new JSONObject();
+		params.put("id", id);
+		params.put("symboltoken", symboltoken);
+		params.put("exchange", exchange);
 
-			String url = routes.get("api.gtt.cancel");
-			JSONObject jsonObject = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			Gtt gtt = new Gtt();
-			gtt.id = jsonObject.getJSONObject("data").getInt("id");
-			log.info("gtt : {}",gtt);
-			return gtt;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+		String url = routes.get("api.gtt.cancel");
+		JSONObject jsonObject = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		Gtt gtt = new Gtt();
+		gtt.id = jsonObject.getJSONObject("data").getInt("id");
+		return gtt;
 	}
 
 	/**
@@ -672,22 +564,14 @@ public class SmartConnect {
 	 * @return returns the details of gtt rule.
 	 */
 
-	public JSONObject gttRuleDetails(Integer id) {
-		try {
+	public JSONObject gttRuleDetails(Integer id) throws SmartAPIException, IOException {
+		JSONObject params = new JSONObject();
+		params.put("id", id);
 
-			JSONObject params = new JSONObject();
-			params.put("id", id);
+		String url = routes.get("api.gtt.details");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
 
-			String url = routes.get("api.gtt.details");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			log.info("response : {}",response);
-
-			return response.getJSONObject("data");
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
-
+		return response.getJSONObject("data");
 	}
 
 	/**
@@ -698,22 +582,15 @@ public class SmartConnect {
 	 * @param count  is the count of gtt rules
 	 * @return returns the detailed list of gtt rules.
 	 */
-	public JSONArray gttRuleList(List<String> status, Integer page, Integer count) {
-		try {
-			JSONObject params = new JSONObject();
-			params.put("status", status);
-			params.put("page", page);
-			params.put("count", count);
+	public JSONArray gttRuleList(List<String> status, Integer page, Integer count) throws SmartAPIException, IOException {
+		JSONObject params = new JSONObject();
+		params.put("status", status);
+		params.put("page", page);
+		params.put("count", count);
 
-			String url = routes.get("api.gtt.list");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			log.info("response : {}",response);
-			return response.getJSONArray("data");
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
-
+		String url = routes.get("api.gtt.list");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		return response.getJSONArray("data");
 	}
 
 	/**
@@ -722,28 +599,16 @@ public class SmartConnect {
 	 * @param params is historic data params.
 	 * @return returns the details of historic data.
 	 */
-	public JSONArray candleData(JSONObject params) {
-		try {
-			String url = routes.get("api.candle.data");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			log.info("response : {}",response);
-			return response.getJSONArray("data");
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+	public JSONArray candleData(JSONObject params) throws SmartAPIException, IOException {
+		String url = routes.get("api.candle.data");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		return response.getJSONArray("data");
 	}
 
-	public JSONArray oiData(JSONObject params) {
-		try {
-			String url = routes.get("api.oi.data");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			log.info("response : {}",response);
-			return response.getJSONArray("data");
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+	public JSONArray oiData(JSONObject params) throws SmartAPIException, IOException {
+		String url = routes.get("api.oi.data");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		return response.getJSONArray("data");
 	}
 
 	/**
@@ -755,19 +620,8 @@ public class SmartConnect {
 	 */
 
 	public String getSearchScrip(JSONObject payload) throws SmartAPIException, IOException {
-		try {
-			String url = routes.get("api.search.script.data");
-			return smartAPIRequestHandler.postRequestJSONObject(this.apiKey, url, payload, accessToken);
-		}catch (IOException ex) {
-			log.error("{} while generating session {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s in generating Session  %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{} while generating session {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s in generating Session %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (SmartAPIException ex) {
-			log.error("{} while generating session {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in generating Session %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-    }
+		String url = routes.get("api.search.script.data");
+		return smartAPIRequestHandler.postRequestJSONObject(this.apiKey, url, payload, accessToken);
   }
 
 /**
@@ -777,21 +631,9 @@ public class SmartConnect {
 	 * @return returns the details of market data.
 	 */
 	public JSONObject marketData(JSONObject params) throws SmartAPIException, IOException {
-		try{
-			String url = routes.get("api.market.data");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			return response.getJSONObject("data");
-		}catch (SmartAPIException ex) {
-			log.error("{} while placing order {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in placing order %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{} while placing order {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s in placing order %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{} while placing order {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s in placing order %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-
-		}
+		String url = routes.get("api.market.data");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		return response.getJSONObject("data");
 	}
 
 	/**
@@ -801,17 +643,12 @@ public class SmartConnect {
 	 *
 	 */
 
-	public JSONObject logout() {
-		try {
-			String url = routes.get("api.user.logout");
-			JSONObject params = new JSONObject();
-			params.put("clientcode", this.userId);
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			return response;
-		} catch (Exception | SmartAPIException e) {
-			log.error(e.getMessage());
-			return null;
-		}
+	public JSONObject logout() throws SmartAPIException, IOException {
+		String url = routes.get("api.user.logout");
+		JSONObject params = new JSONObject();
+		params.put("clientcode", this.userId);
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		return response;
 	}
 
 	/**
@@ -821,37 +658,25 @@ public class SmartConnect {
 	 * @return returns the response of margin data.
 	 */
 	public JSONObject getMarginDetails(List<MarginParams> marginParams) throws IOException, SmartAPIException {
-		try {
-			JSONArray positionsArray = new JSONArray();
+		JSONArray positionsArray = new JSONArray();
 
-			for (MarginParams params : marginParams) {
-				JSONObject position = new JSONObject();
-				position.put("exchange", params.exchange);
-				position.put("qty", params.quantity);
-				position.put("price", params.price);
-				position.put("productType", params.productType);
-				position.put("token", params.token);
-				position.put("tradeType", params.tradeType);
-				positionsArray.put(position);
-			}
-
-			JSONObject requestBody = new JSONObject();
-			requestBody.put("positions", positionsArray);
-
-			String url = routes.get("api.margin.batch");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, requestBody, accessToken);
-			return response;
-		} catch (SmartAPIException ex) {
-			log.error("{} while fetching margin data {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s  while fetching margin data %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{}  while fetching margin data {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s  while fetching margin data %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{}  while fetching margin data {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s  while fetching margin data %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-
+		for (MarginParams params : marginParams) {
+			JSONObject position = new JSONObject();
+			position.put("exchange", params.exchange);
+			position.put("qty", params.quantity);
+			position.put("price", params.price);
+			position.put("productType", params.productType);
+			position.put("token", params.token);
+			position.put("tradeType", params.tradeType);
+			positionsArray.put(position);
 		}
+
+		JSONObject requestBody = new JSONObject();
+		requestBody.put("positions", positionsArray);
+
+		String url = routes.get("api.margin.batch");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, requestBody, accessToken);
+		return response;
 	}
 
 	/** Get Individual Order Details
@@ -860,214 +685,86 @@ public class SmartConnect {
 	 *
 	 */
 	public JSONObject getIndividualOrderDetails(String orderId) throws IOException, SmartAPIException {
-		try {
-			String url = routes.get("api.individual.order").concat(orderId);
-			return smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
-		} catch (SmartAPIException ex) {
-			log.error("{} while getting individual order {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in getting individual order %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-		   log.error("{} while getting individual order {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-		   throw new IOException(String.format("%s  while fetching margin data %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-	   } catch (JSONException ex) {
-		   log.error("{}  while getting individual order {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-		   throw new JSONException(String.format("%s  while fetching margin data %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-	   }
+		String url = routes.get("api.individual.order").concat(orderId);
+		return smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
 	}
 
 
 	public JSONObject estimateCharges(List<EstimateChargesParams> estimateChargesParams) throws IOException, SmartAPIException {
-		try {
-			JSONArray ordersArray = new JSONArray();
+		JSONArray ordersArray = new JSONArray();
 
-			for (EstimateChargesParams params : estimateChargesParams) {
-				JSONObject order = new JSONObject();
-				order.put("product_type", params.product_type);
-				order.put("transaction_type", params.transaction_type);
-				order.put("quantity", params.quantity);
-				order.put("price", params.price);
-				order.put("exchange", params.exchange);
-				order.put("symbol_name", params.symbol_name);
-				order.put("token", params.token);
-				ordersArray.put(order);
-			}
-
-			JSONObject requestBody = new JSONObject();
-			requestBody.put("orders", ordersArray);
-
-			String url = routes.get("api.estimateCharges");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, requestBody, accessToken);
-			return response;
-		} catch (SmartAPIException ex) {
-			log.error("{} while fetching estimateCharges data {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s  while fetching estimateCharges data %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{}  while fetching estimateCharges data {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s  while fetching estimateCharges data %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{}  while fetching estimateCharges data {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s  while fetching estimateCharges data %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-
+		for (EstimateChargesParams params : estimateChargesParams) {
+			JSONObject order = new JSONObject();
+			order.put("product_type", params.product_type);
+			order.put("transaction_type", params.transaction_type);
+			order.put("quantity", params.quantity);
+			order.put("price", params.price);
+			order.put("exchange", params.exchange);
+			order.put("symbol_name", params.symbol_name);
+			order.put("token", params.token);
+			ordersArray.put(order);
 		}
+
+		JSONObject requestBody = new JSONObject();
+		requestBody.put("orders", ordersArray);
+
+		String url = routes.get("api.estimateCharges");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, requestBody, accessToken);
+		return response;
 	}
 
 	public JSONObject verifyDis(JSONObject params) throws SmartAPIException, IOException {
-		try{
-			String url = routes.get("api.verifyDis");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			return response;
-		}catch (SmartAPIException ex) {
-			log.error("{} while verifyDis {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in verifyDis %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{} while verifyDis {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s in verifyDis %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{} while verifyDis {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s in verifyDis %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-
-		}
+		String url = routes.get("api.verifyDis");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		return response;
 	}
 
 	public JSONObject generateTPIN(JSONObject params) throws SmartAPIException, IOException {
-		try{
-			String url = routes.get("api.generateTPIN");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			return response;
-		}catch (SmartAPIException ex) {
-			log.error("{} while generateTPIN {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in generateTPIN %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{} while generateTPIN {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s in generateTPIN %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{} while generateTPIN {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s in generateTPIN %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-
-		}
+		String url = routes.get("api.generateTPIN");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		return response;
 	}
 
 	public JSONObject getTranStatus(JSONObject params) throws SmartAPIException, IOException {
-		try{
-			String url = routes.get("api.getTranStatus");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			return response;
-		}catch (SmartAPIException ex) {
-			log.error("{} while getTranStatus {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in getTranStatus %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{} while getTranStatus {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s in getTranStatus %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{} while getTranStatus {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s in getTranStatus %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-
-		}
+		String url = routes.get("api.getTranStatus");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		return response;
 	}
 
 	public JSONObject optionGreek(JSONObject params) throws SmartAPIException, IOException {
-		try{
-			String url = routes.get("api.optionGreek");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			return response;
-		}catch (SmartAPIException ex) {
-			log.error("{} while optionGreek {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in optionGreek %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{} while optionGreek {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s in optionGreek %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{} while optionGreek {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s in optionGreek %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-
-		}
+		String url = routes.get("api.optionGreek");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		return response;
 	}
 
 	public JSONObject gainersLosers(JSONObject params) throws SmartAPIException, IOException {
-		try{
-			String url = routes.get("api.gainersLosers");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			return response;
-		}catch (SmartAPIException ex) {
-			log.error("{} while gainersLosers {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in gainersLosers %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{} while gainersLosers {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s in gainersLosers %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{} while gainersLosers {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s in gainersLosers %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-
-		}
+		String url = routes.get("api.gainersLosers");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		return response;
 	}
 
 	public JSONObject putCallRatio() throws IOException, SmartAPIException {
-		try {
-			String url = routes.get("api.putCallRatio");
-			JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
-			return response;
-		} catch (SmartAPIException ex) {
-			log.error("{} while getting putCallRatio {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in getting putCallRatio %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{} while getting putCallRatio {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s  while fetching putCallRatio data %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{}  while getting putCallRatio {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s  while fetching putCallRatio data %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		}
+		String url = routes.get("api.putCallRatio");
+		JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
+		return response;
 	}
 
 	public JSONObject nseIntraday() throws IOException, SmartAPIException {
-		try {
-			String url = routes.get("api.nseIntraday");
-			JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
-			return response;
-		} catch (SmartAPIException ex) {
-			log.error("{} while getting nseIntraday {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in getting nseIntraday %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{} while getting nseIntraday {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s  while fetching nseIntraday data %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{}  while getting nseIntraday {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s  while fetching nseIntraday data %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		}
+		String url = routes.get("api.nseIntraday");
+		JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
+		return response;
 	}
 
 	public JSONObject bseIntraday() throws IOException, SmartAPIException {
-		try {
-			String url = routes.get("api.bseIntraday");
-			JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
-			return response;
-		} catch (SmartAPIException ex) {
-			log.error("{} while getting bseIntraday {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in getting bseIntraday %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{} while getting bseIntraday {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s  while fetching bseIntraday data %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{}  while getting bseIntraday {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s  while fetching bseIntraday data %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		}
+		String url = routes.get("api.bseIntraday");
+		JSONObject response = smartAPIRequestHandler.getRequest(this.apiKey, url, accessToken);
+		return response;
 	}
 
 	public JSONObject oIBuildup(JSONObject params) throws SmartAPIException, IOException {
-		try{
-			String url = routes.get("api.oIBuildup");
-			JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
-			return response;
-		}catch (SmartAPIException ex) {
-			log.error("{} while oIBuildup {}", SMART_API_EXCEPTION_OCCURRED, ex.toString());
-			throw new SmartAPIException(String.format("%s in oIBuildup %s", SMART_API_EXCEPTION_ERROR_MSG, ex));
-		} catch (IOException ex) {
-			log.error("{} while oIBuildup {}", IO_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new IOException(String.format("%s in oIBuildup %s", IO_EXCEPTION_ERROR_MSG, ex.getMessage()));
-		} catch (JSONException ex) {
-			log.error("{} while oIBuildup {}", JSON_EXCEPTION_OCCURRED, ex.getMessage());
-			throw new JSONException(String.format("%s in oIBuildup %s", JSON_EXCEPTION_ERROR_MSG, ex.getMessage()));
-
-		}
+		String url = routes.get("api.oIBuildup");
+		JSONObject response = smartAPIRequestHandler.postRequest(this.apiKey, url, params, accessToken);
+		return response;
 	}
 
 
